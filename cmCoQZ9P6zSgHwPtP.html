@@ -1,0 +1,256 @@
+<html><head><base href="https://bonziworld.org/img/agents/">
+<title>Bonzi Buddy Animation Demo</title>
+<script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+<style>
+  body { 
+    margin: 0; 
+    overflow: hidden; 
+    background: #87CEEB; 
+  }
+  #canvas { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+  }
+  .speech-bubble {
+    position: absolute;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    max-width: 200px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: none;
+  }
+  .speech-bubble:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 20px solid transparent;
+    border-top-color: #fff;
+    border-bottom: 0;
+    margin-left: -20px;
+    margin-bottom: -20px;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="speech" class="speech-bubble"></div>
+
+<script>
+class Bonzi {
+  constructor(options) {
+    this.options = Object.assign({
+      spritew: 200,
+      spriteh: 160,
+      w: 3400,
+      h: 3360,
+      toppad: 0,
+      anims: {
+        idle: 0,
+        enter: [277, 302, "idle", 0.25],
+        leave: [16, 39, 40, 0.25],
+        grin_fwd: {
+          frames: this.range(182, 189).concat([184]),
+          next: "grin_back",
+          speed: 0.25
+        },
+        grin_back: {
+          frames: [183, 182],
+          next: "idle",
+          speed: 0.25
+        },
+        shrug_fwd: [40, 50, "shrug_idle", 0.25],
+        shrug_idle: [50],
+        shrug_back: {
+          frames: this.range(40, 50).reverse(),
+          speed: 0.25,
+          next: "idle"
+        },
+        backflip: [331, 343, "idle", 0.25],
+        swag_fwd: [108, 125, "swag_idle", 0.25],
+        swag_idle: 125,
+        swag_back: {
+          frames: this.range(108, 125).reverse(),
+          next: "idle",
+          speed: 0.25
+        },
+        earth_fwd: [51, 56, "earth_idle", 0.25],
+        earth_idle: [57, 80, "earth_idle", 0.25],
+        earth_back: {
+          frames: this.range(51, 58).reverse(),
+          next: "idle",
+          speed: 0.25
+        },
+        clap_fwd: {
+          frames: [0, 10, 11, 12, 13, 14, 15, 13, 14, 15],
+          next: "clap_back",
+          speed: 0.25
+        },
+        clap_back: {
+          frames: [13, 14, 15, 13, 14, 15, 12, 11, 10],
+          next: "idle",
+          speed: 0.25
+        },
+        beat_fwd: {
+          frames: [0, 101, 102, 103, 104, 105, 106, 107, 104, 105, 106, 107],
+          next: "beat_back",
+          speed: 0.25
+        },
+        beat_back: {
+          frames: [104, 105, 106, 107, 104, 105, 106, 107, 103, 102, 101],
+          next: "idle",
+          speed: 0.25
+        },
+        think_fwd: {
+          frames: this.range(242, 247).concat([247, 247, 247, 247]),
+          next: "think_back",
+          speed: 0.25
+        },
+        think_back: {
+          frames: this.range(242, 247).reverse(),
+          next: "idle",
+          speed: 0.25
+        },
+        bow_fwd: [224, 231, "bow_idle", 0.25],
+        bow_idle: 232,
+        bow_back: {
+          frames: this.range(224, 232).reverse(),
+          next: "idle",
+          speed: 0.25
+        },
+        praise_fwd: [159, 163, "praise_idle", 0.25],
+        praise_idle: 164,
+        praise_back: {
+          frames: this.range(159, 164).reverse(),
+          next: "idle",
+          speed: 0.25
+        },
+      },
+    }, options);
+
+    this.sprite = new createjs.Sprite(
+      new createjs.SpriteSheet({
+        images: [this.options.image],
+        frames: {
+          width: this.options.spritew,
+          height: this.options.spriteh,
+          regX: this.options.spritew / 2,
+          regY: this.options.spriteh,
+        },
+        animations: this.options.anims,
+      })
+    );
+
+    this.sprite.x = Math.random() * (window.innerWidth - this.options.spritew) + this.options.spritew / 2;
+    this.sprite.y = Math.random() * (window.innerHeight - this.options.spriteh) + this.options.spriteh;
+
+    this.setupDragging();
+    this.setupSpeechBubble();
+  }
+
+  range(start, end) {
+    return Array.from({length: (end - start)}, (v, k) => k + start);
+  }
+
+  setupDragging() {
+    this.sprite.on("mousedown", (evt) => {
+      this.offset = {x: this.sprite.x - evt.stageX, y: this.sprite.y - evt.stageY};
+    });
+
+    this.sprite.on("pressmove", (evt) => {
+      this.sprite.x = evt.stageX + this.offset.x;
+      this.sprite.y = evt.stageY + this.offset.y;
+      this.updateSpeechBubblePosition();
+    });
+  }
+
+  setupSpeechBubble() {
+    this.speechBubble = document.getElementById('speech');
+  }
+
+  updateSpeechBubblePosition() {
+    this.speechBubble.style.left = `${this.sprite.x}px`;
+    this.speechBubble.style.top = `${this.sprite.y - this.options.spriteh - 40}px`;
+  }
+
+  speak(text) {
+    this.speechBubble.textContent = text;
+    this.speechBubble.style.display = 'block';
+    this.updateSpeechBubblePosition();
+
+    let url = "https://www.tetyys.com/SAPI4/SAPI4?text=" + encodeURIComponent(text) + "&voice=" + encodeURIComponent("Sam") + "&pitch=150&speed=100";
+    let audio = new Audio(url);
+    audio.play();
+
+    setTimeout(() => {
+      this.speechBubble.style.display = 'none';
+    }, 3000);
+  }
+
+  playAnimation(animName) {
+    this.sprite.gotoAndPlay(animName);
+  }
+}
+
+let stage, bonzi;
+
+function init() {
+  stage = new createjs.Stage("canvas");
+  createjs.Touch.enable(stage);
+
+  bonzi = new Bonzi({
+    image: "purple.png",
+    spritew: 200,
+    spriteh: 160,
+  });
+
+  stage.addChild(bonzi.sprite);
+
+  createjs.Ticker.timingMode = createjs.Ticker.RAF;
+  createjs.Ticker.addEventListener("tick", tick);
+
+  resize();
+  window.addEventListener("resize", resize);
+
+  setupButtons();
+}
+
+function tick(event) {
+  stage.update(event);
+}
+
+function resize() {
+  stage.canvas.width = window.innerWidth;
+  stage.canvas.height = window.innerHeight;
+}
+
+function setupButtons() {
+  const animations = ["grin_fwd", "shrug_fwd", "backflip", "swag_fwd", "earth_fwd", "clap_fwd", "beat_fwd", "think_fwd", "bow_fwd", "praise_fwd"];
+  
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.position = 'absolute';
+  buttonContainer.style.bottom = '20px';
+  buttonContainer.style.left = '50%';
+  buttonContainer.style.transform = 'translateX(-50%)';
+  
+  animations.forEach(anim => {
+    const button = document.createElement('button');
+    button.textContent = anim.replace('_fwd', '');
+    button.style.margin = '0 5px';
+    button.addEventListener('click', () => {
+      bonzi.playAnimation(anim);
+      bonzi.speak(`Playing ${anim} animation!`);
+    });
+    buttonContainer.appendChild(button);
+  });
+  
+  document.body.appendChild(buttonContainer);
+}
+
+window.addEventListener("load", init);
+</script>
+</body></html>
